@@ -1,0 +1,177 @@
+Peripheral Motor As MR2x30A @ 1
+Peripheral SonarLF As SonarA @ 2
+Peripheral SonarLB As SonarA @ 3
+'Peripheral SonarR As SonarA @ 5
+
+Dim Status As Byte
+Dim Counter As Byte
+Dim Dir As Bit
+Dim stop As Bit
+Dim Distance As Integer
+Dim DistanceF As Integer
+Dim DistanceB As Integer
+Dim DistanceLR As Word
+Dim i As Word
+
+Sub Main()
+
+	Settings()
+	
+'    Motor.SetDirDual(0)
+'	Motor.SetDcDual(500)
+'	Pause 500
+'	counter=1
+'	Turn(counter Mod 2)
+	
+	SonarLF.RepeatRanging()
+	SonarLB.RepeatRanging()
+	SonarLF.EnableRangingFinishEvent()
+	'SonarLB.EnableRangingFinishEvent()
+	
+'	For i=100 To 300 Step 10
+'		Motor.SetDCDual(i)
+'		Pause 20
+'	Next
+	
+	Do
+		Do
+			SonarLB.Ranging()					'執行重復偵測	
+			Pause 100						'等待100ms
+			Status= SonarLB.GetDistance(1,DistanceB)	'取得偵測結果
+		Loop Until Status = 1					'迴圈停止條件(Status = 1)
+		If DistanceB>100 Then
+			DistanceB=100
+		End If
+'		Debug "Distance=",Status,"  ",DistanceB,"cm",CR	'顯示偵測結果
+	Loop Until DistanceB<40
+	
+	Do
+		If Counter Mod 2=0 Then
+			Dir=0
+		Else
+			Dir=1
+		End If
+		
+		Do
+			SonarLB.Ranging()					'執行重復偵測	
+			Pause 100						'等待100ms
+			Status= SonarLB.GetDistance(1,DistanceB)	'取得偵測結果
+		Loop Until Status = 1					'迴圈停止條件(Status = 1)
+		If DistanceB>100 Then
+			DistanceB=100
+		End If
+'		Debug "Distance=",Status,"  ",DistanceB,"cm",CR	'顯示偵測結果
+		
+		Distance=DistanceF
+		Debug CLS,DistanceF,CR,DistanceB
+		If Distance>=70 Then
+			If Counter<3 Then
+				Counter=Counter+1
+				Turn(!Dir)	
+			Else
+				stop=True
+			End If
+		Else
+			Distance=DistanceF-25
+			Distance=Distance*Distance*Distance\10
+			Distance=Distance+(DistanceF-DistanceB)*50
+			If Distance>0 Then
+				Motor.SetDCAB(500,500-Distance)
+			Else
+				Motor.SetDCAB(500+Distance,500)
+			End If
+		End If
+		
+	Loop Until stop=True
+	Motor.BrakeDual()
+	SonarLF.DisableRangingFinishEvent()
+	SonarLB.DisableRangingFinishEvent()
+End Sub
+
+Sub Settings()
+
+	SonarLF.SetFloorLevel(0)
+	SonarLF.SetRangingTime(3)
+	SonarLF.SetRepeatTime(20)
+	SonarLF.SetRepeatCount(0)
+	SonarLF.SetBurstPower(10)
+	SonarLB.SetFloorLevel(0)
+	SonarLB.SetRangingTime(3)
+	SonarLB.SetRepeatTime(20)
+	SonarLB.SetRepeatCount(0)
+	SonarLB.SetBurstPower(10)
+	Motor.SetDirDual(0)
+	Motor.SetDcDual(500)
+	Counter=0
+	stop=False
+End Sub
+
+Sub Turn(Byval b As Bit)
+	
+	Motor.SetDirDual(0)
+	Motor.SetDcDual(300)
+	Pause 1000
+		
+	If b Then
+		Motor.SetDirAB(0,1)
+	Else
+		Motor.SetDirAB(1,0)
+	End If
+	Motor.SetDcDual(300)	
+	Pause 800	
+	
+	Motor.SetDirDual(0)
+	Motor.SetDcDual(300)
+	Pause 3200
+	
+	If b Then
+		Motor.SetDirAB(0,1)
+	Else
+		Motor.SetDirAB(1,0)
+	End If
+	Motor.SetDcDual(300)	
+	Pause 800
+	
+	Motor.SetDirDual(0)
+	Motor.SetDcDual(300)
+	Pause 1000
+	
+	Do
+		Do
+			SonarLB.Ranging()					'執行重復偵測	
+			Pause 100						'等待100ms
+			Status= SonarLB.GetDistance(1,DistanceB)	'取得偵測結果
+		Loop Until Status = 1					'迴圈停止條件(Status = 1)
+		If DistanceB>100 Then
+			DistanceB=100
+		End If
+'		Debug "Distance=",Status,"  ",DistanceB,"cm",CR	'顯示偵測結果
+	Loop Until DistanceB<40
+	
+End Sub
+
+Event SonarLF.RangingFinishEvent()
+	Status=SonarLF.GetDistance(1,DistanceLR)
+	If Status=1 Then
+		DistanceF=DistanceLR
+	Elseif Status=2 Then 
+		DistanceF=100
+	End If
+	If DistanceF>100 Then
+		DistanceF=100
+	End If
+'	Debug  CSRXY(1,1), DistanceF,"  ", CR
+End Event
+
+'Event SonarLB.RangingFinishEvent()
+'	Status=SonarLB.GetDistance(1,DistanceLR)
+'	If Status=1 Then
+'		DistanceB=DistanceLR
+'	Elseif Status=2 Then 
+'		DistanceB=100
+'	End If
+'	If DistanceB>100 Then
+'		DistanceB=100
+'	End If
+''	Debug  CSRXY(1,2), DistanceB,"  ", CR
+'End Event

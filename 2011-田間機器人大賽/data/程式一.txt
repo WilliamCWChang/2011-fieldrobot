@@ -1,0 +1,332 @@
+Peripheral Motor As MR2x30A @ 1
+Peripheral SonarLF As SonarA @ 2
+Peripheral SonarLB As SonarA @ 3
+Peripheral SonarR As SonarA @ 5
+Peripheral Compass As CompassA @ 4
+
+Dim Status As Byte
+Dim Counter As Byte
+Dim Dir As Bit
+Dim stop As Bit
+Dim Distance As Integer
+Dim DistanceF As Integer
+Dim DistanceB As Integer
+Dim DistanceR As Integer
+Dim DistanceLR As Word
+Dim i As Word
+Dim Angle As Integer
+Dim AngleNum As Word
+Dim Speed As Word
+'10~15為LED
+
+Sub main()
+
+Do
+If In(22) = 0   Then
+Low 15
+High 14
+High 13
+Boebot()
+ElseIf In(21) = 0 Then
+Low 13
+High 14
+High 15
+Catchout()
+ElseIf In(20) = 0 Then
+Low 14
+High 15
+High 13
+Catchin()
+Else
+High 14
+High 15
+High 13
+End If
+Loop Until In(20) = 0 Or In(21) = 0
+
+End Sub
+
+
+
+Sub Boebot()
+        Debug CLS	
+	Settings()
+	
+	SonarLF.RepeatRanging()
+	SonarLB.RepeatRanging()
+	SonarR.RepeatRanging()
+	SonarLF.EnableRangingFinishEvent()
+	SonarLB.EnableRangingFinishEvent()
+	SonarR.EnableRangingFinishEvent()
+	Compass.EnableRefreshEvent()
+	Motor.SetDCDual(Speed)
+'	Pause 500
+	For i=100 To 300 Step 10
+		Motor.SetDCDual(i)
+		Pause 20
+	Next
+	
+	Do
+	Loop Until DistanceB<40
+	Do
+		If Counter Mod 2=0 Then
+			Dir=0
+		Else
+			Dir=1
+		End If
+		
+		Distance=DistanceF
+		
+		If Distance>=70 Then
+			If Counter<3 Then
+				Counter=Counter+1
+				Turn(!Dir)	
+			Else
+				stop=True
+			End If
+		Else
+			Distance=DistanceB-DistanceR
+			'Debug  CSRXY(1,4), Distance,"  ", CR
+			Distance=Distance*Distance*Distance\10
+			Distance=Distance+(DistanceF-DistanceB)*50
+			If Distance>0 Then
+				Motor.SetDCAB(Speed,Speed-Distance)
+			Else
+				Motor.SetDCAB(Speed+Distance,Speed)
+			End If
+		End If
+		
+	Loop Until stop=True
+	Motor.BrakeDual()
+	SonarLF.DisableRangingFinishEvent()
+	SonarLB.DisableRangingFinishEvent()
+	SonarR.DisableRangingFinishEvent()
+	Compass.DisableRefreshEvent()
+End Sub
+
+Sub Settings()
+
+		stop=False
+		Compass.Calibration(0)
+		Do
+		Loop Until stop=True
+		Pause 120
+		
+		Compass.SetRefreshFreq(0)
+
+        SonarLF.SetFloorLevel(0)
+        SonarLF.SetRangingTime(3)
+        SonarLF.SetRepeatTime(10)
+        SonarLF.SetRepeatCount(0)
+        SonarLF.SetBurstPower(10)
+        SonarLB.SetFloorLevel(0)
+        SonarLB.SetRangingTime(3)
+        SonarLB.SetRepeatTime(10)
+        SonarLB.SetRepeatCount(0)
+        SonarLB.SetBurstPower(10)
+        SonarR.SetFloorLevel(0)
+        SonarR.SetRangingTime(3)
+        SonarR.SetRepeatTime(10)
+        SonarR.SetRepeatCount(0)
+        SonarR.SetBurstPower(10)
+        Motor.SetDirDual(0)
+        Counter=0
+        stop=False
+        Speed=500
+End Sub
+
+Sub Turn(Byval b As Bit)
+        'Pause 400
+        Motor.BrakeDual()
+        Pause 500
+
+        Motor.SetDirDual(0)
+        Motor.SetDcDual(300)
+        Pause 1000
+        Motor.BrakeDual()
+        Pause 500
+
+		Compass.GetAngle(AngleNum)
+        If b Then
+                AngleNum=(AngleNum+90) Mod 360
+        Else
+                AngleNum=(AngleNum+270) Mod 360
+        End If
+        Compass.SaveAngle(0,AngleNum)
+        Do 		
+			If (Angle>0) Then
+				Motor.SetDirAB(1,0)
+			Else
+				Motor.SetDirAB(0,1)
+			End If
+			Distance=(Angle)*(Angle)*3\100
+			Distance=Distance+150
+			Motor.SetDCDual(Distance)
+		Loop Until Angle=0
+        Motor.BrakeDual()
+        Pause 500
+
+        Motor.SetDirDual(0)
+        Motor.SetDcDual(300)
+        Pause 2000
+        Motor.BrakeDual()
+        Pause 500
+        '-----︾--------------------------
+        Motor.SetDirDual(0)
+        Motor.SetDcDual(300)
+        Pause 1000
+        Motor.BrakeDual()
+        Pause 500
+        '-----︽-------------------------
+
+        Compass.GetAngle(AngleNum)
+        If b Then
+                AngleNum=(AngleNum+90) Mod 360
+        Else
+                AngleNum=(AngleNum+270) Mod 360
+        End If
+        Compass.SaveAngle(0,AngleNum)
+        Do 		
+			If (Angle>0) Then
+				Motor.SetDirAB(1,0)
+			Else
+				Motor.SetDirAB(0,1)
+			End If
+			Distance=(Angle)*(Angle)*3\100
+			Distance=Distance+150
+			Motor.SetDCDual(Distance)
+		Loop Until Angle=0
+        Motor.BrakeDual()
+        Pause 500
+
+        Motor.SetDirDual(0)
+        Motor.SetDcDual(300)
+        Pause 1000
+        Motor.BrakeDual()
+        Pause 500
+
+        Motor.SetDirDual(0)
+        Motor.SetDCDual(300)
+        Do
+        Loop Until DistanceB<40
+
+End Sub
+
+
+Sub Catchin()
+Dim i As Word
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,200
+PAUSE 20
+NEXT
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+FOR i = 1 TO 100
+PULSEOUT 17,520-4*i
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+FOR i = 1 TO 30
+PULSEOUT 17,120
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+FOR i = 1 TO 90
+PULSEOUT 17,120+4*i
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+FOR i = 1 TO 40
+PULSEOUT 17,480
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+FOR i = 1 TO 100
+PULSEOUT 17,480
+PULSEOUT 16,270
+PAUSE 20
+NEXT
+
+End Sub
+
+Sub Catchout()
+Dim i As Word
+FOR i = 1 TO 100
+PULSEOUT 17,520
+PULSEOUT 16,270
+PAUSE 20
+NEXT
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,295
+PAUSE 20
+NEXT
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,270
+PAUSE 20
+NEXT
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,295
+PAUSE 20
+NEXT
+FOR i = 1 TO 50
+PULSEOUT 17,520
+PULSEOUT 16,360
+PAUSE 20
+NEXT
+End Sub
+
+
+Event SonarLF.RangingFinishEvent()
+        Status=SonarLF.GetDistance(1,DistanceLR)
+        If Status=1 Then
+                DistanceF=DistanceLR
+        Elseif Status=2 Then
+                DistanceF=100
+        End If
+        If DistanceF>100 Then
+                DistanceF=100
+        End If
+        Debug  CSRXY(1,1), DistanceF,"  ", CR
+End Event
+
+Event SonarLB.RangingFinishEvent()
+        Status=SonarLB.GetDistance(1,DistanceLR)
+        If Status=1 Then
+                DistanceB=DistanceLR
+        Elseif Status=2 Then
+                DistanceB=100
+        End If
+        If DistanceB>100 Then
+                DistanceB=100
+        End If
+        Debug  CSRXY(1,2), DistanceB,"  ", CR
+End Event
+
+Event SonarR.RangingFinishEvent()
+        Status=SonarR.GetDistance(1,DistanceLR)
+        If Status=1 Then
+                DistanceR=DistanceLR
+        Elseif Status=2 Then
+                DistanceR=100
+        End If
+        If DistanceR>100 Then
+                DistanceR=100
+        End If
+        Debug  CSRXY(1,3), DistanceR,"  ", CR
+End Event
+
+Event Compass.CalEndEvent()
+	Stop=True
+End Event
+
+Event Compass.FieldRefreshEvent()
+	Compass.GetDevAngle(0, Angle)	'	取得偏向角的角度	
+	'Debug CSRXY(1, 10), "偏向角: ", %DEC4 Angle, CR	
+End Event

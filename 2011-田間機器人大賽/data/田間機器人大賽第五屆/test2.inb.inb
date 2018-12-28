@@ -1,0 +1,120 @@
+Peripheral Motor As MR2x30A @ 1
+Peripheral Sonar As SonarA @ 2
+Peripheral Compass As CompassA @ 4
+
+Dim Status As Byte
+Dim Dir As Bit
+Dim stop As Bit
+Dim Counter As Word
+Dim Distance As Word
+Dim DistanceL As Word
+Dim DistanceLR As Word
+Dim Angle As Integer
+
+Sub Main()
+	Debug CLS	
+	Settings()
+	
+	Compass.EnableRefreshEvent()
+	Sonar.RepeatRanging()
+	Sonar.EnableRangingFinishEvent()
+'	Motor.SetDCAB(500,500)
+'	Do
+'		Distance=Angle*20
+'		If Distance>0 Then
+'			Motor.SetDCAB(500-Distance,500)
+'		Else
+'			Motor.SetDCAB(500,500+Distance)
+'		End If
+'	Loop' Until DistanceL<50
+'	Motor.BrakeDual()
+	Pause 1000
+	Counter=1
+	Do 
+	    If Angle>0 Then
+			Motor.SetDirAB(1,0)
+		Else
+			Motor.SetDirAB(0,1)
+		End If
+		DistanceLR=(Angle)*(Angle)*3\100
+		DistanceLR=DistanceLR+150
+		Motor.SetDCAB(DistanceLR,DistanceLR)
+	Loop Until (Angle=0)
+	
+	Motor.BrakeDual()
+	Pause 1000
+	Counter=2
+	Do 
+	    If Angle>0 Then
+			Motor.SetDirAB(1,0)
+		Else
+			Motor.SetDirAB(0,1)
+		End If
+		DistanceLR=(Angle)*(Angle)*3\100
+		DistanceLR=DistanceLR+150
+		Motor.SetDCAB(DistanceLR,DistanceLR)
+	Loop Until (Angle=0)
+	
+	Motor.BrakeDual()
+	Pause 1000
+	Counter=3
+	Do 
+	    If Angle>0 Then
+			Motor.SetDirAB(1,0)
+		Else
+			Motor.SetDirAB(0,1)
+		End If
+		DistanceLR=(Angle)*(Angle)*3\100
+		DistanceLR=DistanceLR+150
+		Motor.SetDCAB(DistanceLR,DistanceLR)
+	Loop Until (Angle=0)
+	
+	Motor.BrakeDual()
+	Compass.DisableRefreshEvent()
+End Sub
+
+Sub Settings()
+	stop=False
+	Compass.Calibration(0)
+	Do
+	Loop Until stop=True
+	Pause 120
+	
+	Compass.SetRefreshFreq(0)
+	Compass.GetAngle(Angle)
+	
+	Compass.SaveAngle(0,Angle)
+	Angle=(Angle+270)Mod 360
+	Compass.SaveAngle(1,Angle)
+	Compass.SaveAngle(3,Angle)
+	Angle=(Angle+270)Mod 360
+	Compass.SaveAngle(2,Angle)
+	Sonar.SetFloorLevel(0)
+	Sonar.SetRangingTime(10)
+	Sonar.SetRepeatTime(2)
+	Sonar.SetRepeatCount(0)
+	Sonar.SetBurstPower(10)
+
+	Counter=0
+	DistanceL=100
+	Motor.SetDirAB(1,1)
+End Sub
+
+Event Sonar.RangingFinishEvent()
+	Status=Sonar.GetDistance(1,DistanceLR)
+	If Status=1 Then
+		DistanceL=DistanceLR
+	Elseif Status=2 Then
+		DistanceL=255
+	End If
+	Debug CSRXY(1, 9), "超音波: ", %DEC4 DistanceL, CR
+End Event
+
+Event Compass.CalEndEvent()
+	Stop=True
+End Event
+
+Event Compass.FieldRefreshEvent()
+	Compass.GetDevAngle(Counter, Angle)	'	取得偏向角的角度	
+	Debug CSRXY(1, 10), "偏向角: ", %DEC4 Angle, CR	
+End Event

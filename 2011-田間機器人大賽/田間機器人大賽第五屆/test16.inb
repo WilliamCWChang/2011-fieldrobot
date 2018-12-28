@@ -1,0 +1,12 @@
+Sub main()
+Do
+Dim i As Word
+
+
+FOR i = 1 TO 100
+PULSEOUT 17,480
+PULSEOUT 16,260
+PAUSE 20
+NEXT
+Loop
+End Sub 

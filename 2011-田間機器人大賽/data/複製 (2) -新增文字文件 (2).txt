@@ -1,0 +1,36 @@
+ 作者  w86083 (可樂果)                                           看板  w86083
+ 標題  [生活]
+ 時間  Wed Oct 12 18:09:09 2011
+───────────────────────────────────────
+
+Peripheral myMotor As MR2x30A @ 1       ' 設定模組編號為0
+
+Sub Main()
+Do
+
+        If In(9) =  0 Then
+
+        mymotor.forwardA(1000)
+        mymotor.backwardB(1000)
+        ElseIf In(8) =  0 Then
+        mymotor.forwardB(1000)
+        mymotor.backwardA(1000)
+        ElseIf In(19) =  0 Then'FOR
+
+        mymotor.forwarddual(1000)
+
+        ElseIf In(18) =  0 Then'BACK
+        mymotor.backwarddual(1000)
+
+        Else
+
+        mymotor.brakeDual()
+        End If
+        mymotor.STOPDual()
+
+Loop
+End Sub
+
+--
+※ 發信站: 批踢踢兔(ptt2.cc)
+◆ From: 140.112.183.98
